@@ -1150,6 +1150,8 @@ class Exchange:
             params.update({"timeInForce": time_in_force.upper()})
         if reduceOnly:
             params.update({"reduceOnly": True})
+        if self.trading_mode == TradingMode.MARGIN:
+            params.update({"type": "margin"})
         return params
 
     def _order_needs_price(self, ordertype: str) -> bool:
@@ -1726,7 +1728,7 @@ class Exchange:
             if tickers:
                 return tickers
         try:
-            tickers = self._api.fetch_tickers(symbols)
+            tickers = self._api.fetch_tickers(symbols, params={"type": "spot"})
             with self._cache_lock:
                 self._fetch_tickers_cache["fetch_tickers"] = tickers
             return tickers
@@ -2987,7 +2989,7 @@ class Exchange:
             if market["limits"]["leverage"]["max"] is not None:
                 return market["limits"]["leverage"]["max"]
             else:
-                return 1.0  # Default if max leverage cannot be found
+                return 0.0  # Default if max leverage cannot be found
         else:
             return 1.0
 
@@ -3002,7 +3004,12 @@ class Exchange:
         Set's the leverage before making a trade, in order to not
         have the same leverage on every trade
         """
-        if self._config["dry_run"] or not self.exchange_has("setLeverage"):
+        # FIXME: Could not set leverage due to NotSupported. Message: binance setLeverage() supports linear and inverse contracts only
+        if (
+            self._config["dry_run"]
+            or not self.exchange_has("setLeverage")
+            or self.trading_mode == TradingMode.MARGIN
+        ):
             # Some exchanges only support one margin_mode type
             return
         if self._ft_has.get("floor_leverage", False) is True:
@@ -3053,7 +3060,12 @@ class Exchange:
         Set's the margin mode on the exchange to cross or isolated for a specific pair
         :param pair: base/quote currency pair (e.g. "ADA/USDT")
         """
-        if self._config["dry_run"] or not self.exchange_has("setMarginMode"):
+        # FIXME: Could not set margin mode due to NotSupported. Message: binance setMarginMode() supports linear and inverse contracts only
+        if (
+            self._config["dry_run"]
+            or not self.exchange_has("setMarginMode")
+            or self.trading_mode == TradingMode.MARGIN
+        ):
             # Some exchanges only support one margin_mode type
             return
 
@@ -3242,10 +3254,10 @@ class Exchange:
         """
         if self.trading_mode == TradingMode.SPOT:
             return None
-        elif self.trading_mode != TradingMode.FUTURES:
-            raise OperationalException(
-                f"{self.name} does not support {self.margin_mode} {self.trading_mode}"
-            )
+        # elif self.trading_mode != TradingMode.FUTURES:
+        #     raise OperationalException(
+        #         f"{self.name} does not support {self.margin_mode} {self.trading_mode}"
+        #     )
 
         liquidation_price = None
         if self._config["dry_run"] or not self.exchange_has("fetchPositions"):

@@ -1102,8 +1102,11 @@ class FreqtradeBot(LoggingMixin):
                     side=trade_side,
                     entry_tag=entry_tag,
                 )
-            # Cap leverage between 1.0 and max_leverage.
-            leverage = min(max(leverage, 1.0), max_leverage)
+            if max_leverage != 0.0:
+                # Cap leverage between 1.0 and max_leverage.
+                leverage = min(max(leverage, 1.0), max_leverage)
+            else:
+                leverage = max(leverage, 1.0)
         else:
             # Changing leverage currently not possible
             leverage = trade.leverage if trade else 1.0
