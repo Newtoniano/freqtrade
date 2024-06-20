@@ -2380,8 +2380,9 @@ class FreqtradeBot(LoggingMixin):
         Either uses provided trades list or the result of fetch_my_trades to get correct fee.
         """
         if not trades:
+            params = {"type": "margin"} if self.trading_mode == TradingMode.MARGIN else {}
             trades = self.exchange.get_trades_for_order(
-                self.exchange.get_order_id_conditional(order), trade.pair, order_obj.order_date
+                self.exchange.get_order_id_conditional(order), trade.pair, order_obj.order_date, params
             )
 
         if len(trades) == 0:
