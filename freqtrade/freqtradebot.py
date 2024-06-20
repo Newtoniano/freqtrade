@@ -1989,7 +1989,7 @@ class FreqtradeBot(LoggingMixin):
                 amount=amount,
                 rate=limit,
                 leverage=trade.leverage,
-                reduceOnly=self.trading_mode == TradingMode.FUTURES,
+                reduceOnly=self.trading_mode in (TradingMode.FUTURES, TradingMode.MARGIN),
                 time_in_force=time_in_force,
             )
         except InsufficientFundsError as e:

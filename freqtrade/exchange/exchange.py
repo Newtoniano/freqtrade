@@ -1148,10 +1148,14 @@ class Exchange:
         params = self._params.copy()
         if time_in_force != "GTC" and ordertype != "market":
             params.update({"timeInForce": time_in_force.upper()})
-        if reduceOnly:
-            params.update({"reduceOnly": True})
+        if self.trading_mode == TradingMode.FUTURES and reduceOnly:
+                params.update({"reduceOnly": True})
         if self.trading_mode == TradingMode.MARGIN:
             params.update({"type": "margin"})
+            if reduceOnly:
+                params.update({"sideEffectType": "AUTO_REPAY"})
+            else:
+                params.update({"sideEffectType": "MARGIN_BUY"})
         return params
 
     def _order_needs_price(self, ordertype: str) -> bool:
